@@ -20,7 +20,9 @@ export interface StorageStateHookDataConfig<Data> {
     serializer: (value: Data) => string
 }
 
-export function useStorageState<Data>(config: StorageStateHookStringConfig | StorageStateHookDataConfig<Data>): unknown extends Data ? [string | null, Dispatch<string | null>] : [Data, Dispatch<Data>] {
+export function useStorageState(config: StorageStateHookStringConfig): [string | null, Dispatch<string | null>]
+export function useStorageState<Data>(config: StorageStateHookDataConfig<Data>): [Data, Dispatch<Data>]
+export function useStorageState<Data>(config: StorageStateHookStringConfig | StorageStateHookDataConfig<Data>) {
     const { key, storage, parser, serializer } = config
 
     const [state, setState] = useState(() => {
@@ -44,12 +46,12 @@ export function useSessionStorageState(key: string): [string | null, Dispatch<st
 export function useSessionStorageState<Data>(config: Omit<StorageStateHookDataConfig<Data>, "storage">): [Data, Dispatch<Data>]
 export function useSessionStorageState<Data>(keyOrConfig: string | Omit<StorageStateHookDataConfig<Data>, "storage">) {
     const config = typeof keyOrConfig === "string" ? { key: keyOrConfig, storage: sessionStorage } : { ...keyOrConfig, storage: sessionStorage }
-    return useStorageState(config)
+    return useStorageState(config as any)
 }
 
 export function useLocalStorageState(key: string): [string | null, Dispatch<string | null>]
 export function useLocalStorageState<Data>(config: Omit<StorageStateHookDataConfig<Data>, "storage">): [Data, Dispatch<Data>]
 export function useLocalStorageState<Data>(keyOrConfig: string | Omit<StorageStateHookDataConfig<Data>, "storage">) {
     const config = typeof keyOrConfig === "string" ? { key: keyOrConfig, storage: localStorage } : { ...keyOrConfig, storage: localStorage }
-    return useStorageState(config)
+    return useStorageState(config as any)
 }
