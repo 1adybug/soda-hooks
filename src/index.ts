@@ -1,4 +1,4 @@
-import { Dispatch, useMemo, useState } from "react"
+import { Dispatch, SetStateAction, useMemo, useState } from "react"
 
 export interface Storage {
     getItem(key: string): string | null
@@ -20,8 +20,8 @@ export interface StorageStateHookDataConfig<Data> {
     serializer: (value: Data) => string
 }
 
-export function useStorageState(config: StorageStateHookStringConfig): [string | null, Dispatch<string | null>]
-export function useStorageState<Data>(config: StorageStateHookDataConfig<Data>): [Data, Dispatch<Data>]
+export function useStorageState(config: StorageStateHookStringConfig): [string | null, Dispatch<SetStateAction<string | null>>]
+export function useStorageState<Data>(config: StorageStateHookDataConfig<Data>): [Data, Dispatch<SetStateAction<Data>>]
 export function useStorageState<Data>(config: StorageStateHookStringConfig | StorageStateHookDataConfig<Data>) {
     const { key, storage, parser, serializer } = config
 
@@ -39,18 +39,18 @@ export function useStorageState<Data>(config: StorageStateHookStringConfig | Sto
         }
     }, [state])
 
-    return [state, setState] as any
+    return [state, setState]
 }
 
-export function useSessionStorageState(key: string): [string | null, Dispatch<string | null>]
-export function useSessionStorageState<Data>(config: Omit<StorageStateHookDataConfig<Data>, "storage">): [Data, Dispatch<Data>]
+export function useSessionStorageState(key: string): [string | null, Dispatch<SetStateAction<string | null>>]
+export function useSessionStorageState<Data>(config: Omit<StorageStateHookDataConfig<Data>, "storage">): [Data, Dispatch<SetStateAction<Data>>]
 export function useSessionStorageState<Data>(keyOrConfig: string | Omit<StorageStateHookDataConfig<Data>, "storage">) {
     const config = typeof keyOrConfig === "string" ? { key: keyOrConfig, storage: sessionStorage } : { ...keyOrConfig, storage: sessionStorage }
     return useStorageState(config as any)
 }
 
-export function useLocalStorageState(key: string): [string | null, Dispatch<string | null>]
-export function useLocalStorageState<Data>(config: Omit<StorageStateHookDataConfig<Data>, "storage">): [Data, Dispatch<Data>]
+export function useLocalStorageState(key: string): [string | null, Dispatch<SetStateAction<string | null>>]
+export function useLocalStorageState<Data>(config: Omit<StorageStateHookDataConfig<Data>, "storage">): [Data, Dispatch<SetStateAction<Data>>]
 export function useLocalStorageState<Data>(keyOrConfig: string | Omit<StorageStateHookDataConfig<Data>, "storage">) {
     const config = typeof keyOrConfig === "string" ? { key: keyOrConfig, storage: localStorage } : { ...keyOrConfig, storage: localStorage }
     return useStorageState(config as any)
