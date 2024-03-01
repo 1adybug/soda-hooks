@@ -1,4 +1,4 @@
-import type { DependencyList, Dispatch, SetStateAction } from "react"
+import type { DependencyList, Dispatch, MutableRefObject, SetStateAction } from "react"
 import { useEffect, useMemo, useState } from "react"
 
 export interface Storage {
@@ -89,4 +89,36 @@ export function useAsync(effect: () => AsyncGenerator<void, void, void> | Promis
             }
         }
     }, dependencyList)
+}
+
+export interface ScrollMemoOptions {
+    target: HTMLElement | null | MutableRefObject<HTMLElement | null>
+    storage?: Storage
+    key: string
+    ready?: boolean
+    behavior?: ScrollBehavior
+}
+
+export function useScrollMemo(options: ScrollMemoOptions) {
+    const { target, storage = sessionStorage, key, ready = true, behavior } = options
+    useEffect(() => {
+        if (!ready) return
+        if (target === null) return
+        const element = target instanceof HTMLElement ? target : target.current
+        if (element === null) return
+        try {
+            const value = storage.getItem(key)
+            if (value === null) throw new Error()
+            const { left, top } = JSON.parse(value)
+            if (typeof left === "number" && typeof top === "number") {
+                element.scrollTo({ left, top, behavior })
+            }
+        } catch (error) {}
+        function listener(e: Event) {
+            const { scrollLeft, scrollTop } = e.target as HTMLElement
+            storage.setItem(key, JSON.stringify({ left: scrollLeft, top: scrollTop }))
+        }
+        element.addEventListener("scroll", listener)
+        return () => element.removeEventListener("scroll", listener)
+    }, [target, storage, key, ready, behavior])
 }
