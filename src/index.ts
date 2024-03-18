@@ -1,5 +1,5 @@
 import type { DependencyList, Dispatch, MutableRefObject, SetStateAction } from "react"
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 
 export interface Storage {
     getItem(key: string): string | null
@@ -138,4 +138,17 @@ export function useScrollMemo(options: ScrollMemoOptions) {
             element.removeEventListener("scroll", listener)
         }
     }, [target, storage, key, ready, behavior])
+}
+
+/**
+ * 在 react 中比较数组是否发生变化
+ */
+export function useArraySignal<T>(data: T[], compareFn?: (a: T, b: T) => boolean) {
+    const dataRef = useRef(data)
+    const signal = useRef(Symbol("arraySignal"))
+    if (data !== dataRef.current && (dataRef.current.length !== data.length || dataRef.current.some((it, idx) => (compareFn ? !compareFn(it, data[idx]) : it !== data[idx])))) {
+        signal.current = Symbol("arraySignal")
+        dataRef.current = data
+    }
+    return signal.current
 }
