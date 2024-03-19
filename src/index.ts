@@ -160,14 +160,14 @@ export type StateToQueryFnMap<T extends QueryToStateFnMap> = {
     [K in keyof T]?: (value: T[K] extends (...args: any[]) => infer R ? R : string | undefined) => string | null | undefined | string[]
 }
 
-export type QueryStateOptions<T extends string, K extends QueryToStateFnMap> = {
+export type QueryStateOptions<T extends string = never, K extends QueryToStateFnMap = QueryToStateFnMap> = {
     keys?: T[]
     parse?: K
     stringify?: StateToQueryFnMap<K>
     deps?: any[]
 }
 
-export type QueryState<T extends string, K extends QueryToStateFnMap> = {
+export type QueryState<T extends string = never, K extends QueryToStateFnMap = QueryToStateFnMap> = {
     [Key in T | keyof K]: Key extends keyof K ? (K[Key] extends (...args: any[]) => infer R ? R : string | undefined) : string | undefined
 }
 
@@ -179,7 +179,7 @@ export function compareSearch(a: Record<string, string[]>, b: Record<string, str
     return compareArray(Object.keys(a), Object.keys(b)) && Object.keys(a).every(key => compareArray(a[key], b[key]))
 }
 
-export function useQueryState<T extends string, K extends QueryToStateFnMap>(options?: QueryStateOptions<T, K>): [QueryState<T, K>, Dispatch<SetStateAction<QueryState<T, K>>>] {
+export function useQueryState<T extends string = never, K extends QueryToStateFnMap = QueryToStateFnMap>(options?: QueryStateOptions<T, K>): [QueryState<T, K>, Dispatch<SetStateAction<QueryState<T, K>>>] {
     const [searchParams, setSearchParams] = useSearchParams()
     const { keys = [], parse = {}, stringify = {}, deps = [] } = options || {}
     const totalKeys = (keys as string[]).concat(Object.keys(parse))
