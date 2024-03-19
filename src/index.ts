@@ -168,7 +168,7 @@ export type QueryStateOptions<T extends string, K extends QueryToStateFnMap> = {
 }
 
 export type QueryState<T extends string, K extends QueryToStateFnMap> = {
-    [Key in NoInfer<T> | keyof K]: Key extends keyof K ? (K[Key] extends (...args: any[]) => infer R ? R : string | undefined) : string | undefined
+    [Key in T | keyof K]: Key extends keyof K ? (K[Key] extends (...args: any[]) => infer R ? R : string | undefined) : string | undefined
 }
 
 export function compareArray(a: any[], b: any[]) {
