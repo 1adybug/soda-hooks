@@ -179,7 +179,9 @@ export function compareSearch(a: Record<string, string[]>, b: Record<string, str
     return compareArray(Object.keys(a), Object.keys(b)) && Object.keys(a).every(key => compareArray(a[key], b[key]))
 }
 
-export function useQueryState<T extends string = never, K extends QueryToStateFnMap = QueryToStateFnMap>(options?: QueryStateOptions<T, K>): [QueryState<T, K>, Dispatch<SetStateAction<QueryState<T, K>>>] {
+export type SetQueryState<T extends string, K extends QueryToStateFnMap> = (state: Partial<QueryState<T, K>> | ((prevState: QueryState<T, K>) => Partial<QueryState<T, K>>)) => void
+
+export function useQueryState<T extends string = never, K extends QueryToStateFnMap = QueryToStateFnMap>(options?: QueryStateOptions<T, K>): [QueryState<T, K>, SetQueryState<T, K>] {
     const [searchParams, setSearchParams] = useSearchParams()
     const { keys = [], parse = {}, stringify = {}, deps = [] } = options || {}
     const totalKeys = (keys as string[]).concat(Object.keys(parse))
@@ -203,7 +205,7 @@ export function useQueryState<T extends string = never, K extends QueryToStateFn
     }, [cache.current])
     const queryStateRef = useRef(queryState)
     queryStateRef.current = queryState
-    const setQueryState: Dispatch<SetStateAction<QueryState<T, K>>> = useCallback(state => {
+    const setQueryState: SetQueryState<T, K> = useCallback(state => {
         const newState = typeof state === "function" ? state(queryStateRef.current) : state
         const { searchParams, setSearchParams, search, parse, stringify } = cache.current
         const newSearchParams = new URLSearchParams(searchParams)
