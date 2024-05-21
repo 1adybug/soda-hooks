@@ -267,7 +267,7 @@ export function useNativeQueryState<T extends string = never, K extends QueryToS
         url.search = newSearch
         window.history.replaceState(null, "", url.toString())
     }
-    return useOriginalQueryState(search, setSearch, options)
+    return useOriginalQueryState(search, setSearch, rest)
 }
 
 export type ThirdPartyImageErrorHandlerTarget = HTMLElement | Window | Document | MutableRefObject<HTMLElement>
