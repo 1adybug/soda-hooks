@@ -27,12 +27,14 @@
         "type": "git",
         "url": "git+https://github.com/1adybug/soda-hooks.git"
     },
+    "dependencies": {
+        "react-router-dom": "^6.23.1"
+    },
     "devDependencies": {
-        "@types/react": "^18.2.67",
-        "father": "^4.4.0"
+        "@types/react": "^18.3.2",
+        "father": "^4.4.1"
     },
     "peerDependencies": {
-        "react": ">=16.8.0",
-        "react-router-dom": "^6"
+        "react": "^18.3.1"
     }
 }

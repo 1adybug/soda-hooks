@@ -181,8 +181,7 @@ export function compareSearch(a: Record<string, string[]>, b: Record<string, str
 
 export type SetQueryState<T extends string, K extends QueryToStateFnMap> = (state: Partial<QueryState<T, K>> | ((prevState: QueryState<T, K>) => Partial<QueryState<T, K>>)) => void
 
-export function useQueryState<T extends string = never, K extends QueryToStateFnMap = QueryToStateFnMap>(options?: QueryStateOptions<T, K>): [QueryState<T, K>, SetQueryState<T, K>] {
-    const [searchParams, setSearchParams] = useSearchParams()
+export function useOriginalQueryState<T extends string = never, K extends QueryToStateFnMap = QueryToStateFnMap>(searchParams: URLSearchParams, setSearchParams: (next: URLSearchParams | ((prev: URLSearchParams) => URLSearchParams)) => void, options?: QueryStateOptions<T, K>): [QueryState<T, K>, SetQueryState<T, K>] {
     const { keys = [], parse = {}, stringify = {}, deps = [] } = options || {}
     const totalKeys = (keys as string[]).concat(Object.keys(parse))
     const search = totalKeys.reduce((prev: Record<string, string[]>, key) => {
@@ -240,4 +239,27 @@ export function useQueryState<T extends string = never, K extends QueryToStateFn
         setSearchParams(newSearchParams)
     }, [])
     return [queryState, setQueryState]
+}
+
+/** 
+ * 使用 React Router 的 useSearchParams 实现的 useQueryState
+ */
+export function useQueryState<T extends string = never, K extends QueryToStateFnMap = QueryToStateFnMap>(options?: QueryStateOptions<T, K>): [QueryState<T, K>, SetQueryState<T, K>] {
+    const [searchParams, setSearchParams] = useSearchParams()
+    return useOriginalQueryState(searchParams, setSearchParams, options)
+}
+
+/** 
+ * 使用原生的 URLSearchParams 实现的 useNativeQueryState
+ */
+export function useNativeQueryState<T extends string = never, K extends QueryToStateFnMap = QueryToStateFnMap>(options?: QueryStateOptions<T, K>): [QueryState<T, K>, SetQueryState<T, K>] {
+    const searchParams = new URLSearchParams(window.location.search)
+    function setSearchParams(next: URLSearchParams | ((prev: URLSearchParams) => URLSearchParams)) {
+        const newSearchParams = typeof next === "function" ? next(searchParams) : next
+        const search = newSearchParams.toString()
+        const url = new URL(window.location.href)
+        url.search = search
+        window.history.replaceState(null, "", url.toString())
+    }
+    return useOriginalQueryState(searchParams, setSearchParams, options)
 }
