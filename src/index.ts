@@ -249,19 +249,25 @@ export function useQueryState<T extends string = never, K extends QueryToStateFn
     return useOriginalQueryState(searchParams, setSearchParams, options)
 }
 
+export type NativeQueryStateOptions<T extends string = never, K extends QueryToStateFnMap = QueryToStateFnMap> = QueryStateOptions<T, K> & {
+    search?: URLSearchParams
+    setSearch?: (next: URLSearchParams | ((prev: URLSearchParams) => URLSearchParams)) => void
+}
+
 /**
  * 使用原生的 URLSearchParams 实现的 useNativeQueryState
  */
-export function useNativeQueryState<T extends string = never, K extends QueryToStateFnMap = QueryToStateFnMap>(options?: QueryStateOptions<T, K>): [QueryState<T, K>, SetQueryState<T, K>] {
-    const searchParams = new URLSearchParams(window.location.search)
-    function setSearchParams(next: URLSearchParams | ((prev: URLSearchParams) => URLSearchParams)) {
-        const newSearchParams = typeof next === "function" ? next(searchParams) : next
-        const search = newSearchParams.toString()
+export function useNativeQueryState<T extends string = never, K extends QueryToStateFnMap = QueryToStateFnMap>(options?: NativeQueryStateOptions<T, K>): [QueryState<T, K>, SetQueryState<T, K>] {
+    let { search, setSearch, ...rest } = options || {}
+    search ??= new URLSearchParams(window.location.search)
+    setSearch ??= function setSearch(next: URLSearchParams | ((prev: URLSearchParams) => URLSearchParams)) {
+        const newSearchParams = typeof next === "function" ? next(search) : next
+        const newSearch = newSearchParams.toString()
         const url = new URL(window.location.href)
-        url.search = search
+        url.search = newSearch
         window.history.replaceState(null, "", url.toString())
     }
-    return useOriginalQueryState(searchParams, setSearchParams, options)
+    return useOriginalQueryState(search, setSearch, options)
 }
 
 export type ThirdPartyImageErrorHandlerTarget = HTMLElement | Window | Document | MutableRefObject<HTMLElement>
@@ -280,7 +286,7 @@ function targetIsMutableRefObject(target: ThirdPartyImageErrorHandlerTarget): ta
     return target !== null && typeof target === "object" && "current" in target && target.current instanceof HTMLElement
 }
 
-/** 
+/**
  * 用于处理第三方图片加载失败的 hook
  */
 export function useThirdPartyImageErrorHandler(options: ThirdPartyImageErrorHandlerOptions) {
