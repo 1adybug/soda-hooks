@@ -261,7 +261,7 @@ export function useNativeQueryState<T extends string = never, K extends QueryToS
     let { search, setSearch, ...rest } = options || {}
     search ??= new URLSearchParams(window.location.search)
     setSearch ??= function setSearch(next: URLSearchParams | ((prev: URLSearchParams) => URLSearchParams)) {
-        const newSearchParams = typeof next === "function" ? next(search) : next
+        const newSearchParams = typeof next === "function" ? next(search!) : next
         const newSearch = newSearchParams.toString()
         const url = new URL(window.location.href)
         url.search = newSearch
