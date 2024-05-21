@@ -181,8 +181,34 @@ export function compareSearch(a: Record<string, string[]>, b: Record<string, str
 
 export type SetQueryState<T extends string, K extends QueryToStateFnMap> = (state: Partial<QueryState<T, K>> | ((prevState: QueryState<T, K>) => Partial<QueryState<T, K>>)) => void
 
-export function useOriginalQueryState<T extends string = never, K extends QueryToStateFnMap = QueryToStateFnMap>(searchParams: URLSearchParams, setSearchParams: (next: URLSearchParams | ((prev: URLSearchParams) => URLSearchParams)) => void, options?: QueryStateOptions<T, K>): [QueryState<T, K>, SetQueryState<T, K>] {
-    const { keys = [], parse = {}, stringify = {}, deps = [] } = options || {}
+/**
+ * 使用 React Router 的 useSearchParams 实现的 useQueryState
+ */
+export function useQueryState<T extends string = never, K extends QueryToStateFnMap = QueryToStateFnMap>(options?: QueryStateOptions<T, K>): [QueryState<T, K>, SetQueryState<T, K>] {
+    const [searchParams, setSearchParams] = useSearchParams()
+    return useNativeQueryState({ ...options, search: searchParams, setSearch: setSearchParams })
+}
+
+export type NativeQueryStateOptions<T extends string = never, K extends QueryToStateFnMap = QueryToStateFnMap> = QueryStateOptions<T, K> & {
+    search?: URLSearchParams
+    setSearch?: (next: URLSearchParams | ((prev: URLSearchParams) => URLSearchParams)) => void
+}
+
+/**
+ * 使用原生的 URLSearchParams 实现的 useNativeQueryState
+ */
+export function useNativeQueryState<T extends string = never, K extends QueryToStateFnMap = QueryToStateFnMap>(options?: NativeQueryStateOptions<T, K>): [QueryState<T, K>, SetQueryState<T, K>] {
+    const { keys = [], parse = {}, stringify = {}, deps = [], search: originalSearch, setSearch: originalSetSearch } = options || {}
+    const searchParams = originalSearch ?? new URLSearchParams(window.location.search)
+    const setSearchParams =
+        originalSetSearch ??
+        function setSearchParams(next: URLSearchParams | ((prev: URLSearchParams) => URLSearchParams)) {
+            const newSearchParams = typeof next === "function" ? next(searchParams) : next
+            const newSearch = newSearchParams.toString()
+            const url = new URL(window.location.href)
+            url.search = newSearch
+            window.history.replaceState(null, "", url.toString())
+        }
     const totalKeys = (keys as string[]).concat(Object.keys(parse))
     const search = totalKeys.reduce((prev: Record<string, string[]>, key) => {
         prev[key] = searchParams.getAll(key)
@@ -239,35 +265,6 @@ export function useOriginalQueryState<T extends string = never, K extends QueryT
         setSearchParams(newSearchParams)
     }, [])
     return [queryState, setQueryState]
-}
-
-/**
- * 使用 React Router 的 useSearchParams 实现的 useQueryState
- */
-export function useQueryState<T extends string = never, K extends QueryToStateFnMap = QueryToStateFnMap>(options?: QueryStateOptions<T, K>): [QueryState<T, K>, SetQueryState<T, K>] {
-    const [searchParams, setSearchParams] = useSearchParams()
-    return useOriginalQueryState(searchParams, setSearchParams, options)
-}
-
-export type NativeQueryStateOptions<T extends string = never, K extends QueryToStateFnMap = QueryToStateFnMap> = QueryStateOptions<T, K> & {
-    search?: URLSearchParams
-    setSearch?: (next: URLSearchParams | ((prev: URLSearchParams) => URLSearchParams)) => void
-}
-
-/**
- * 使用原生的 URLSearchParams 实现的 useNativeQueryState
- */
-export function useNativeQueryState<T extends string = never, K extends QueryToStateFnMap = QueryToStateFnMap>(options?: NativeQueryStateOptions<T, K>): [QueryState<T, K>, SetQueryState<T, K>] {
-    let { search, setSearch, ...rest } = options || {}
-    search ??= new URLSearchParams(window.location.search)
-    setSearch ??= function setSearch(next: URLSearchParams | ((prev: URLSearchParams) => URLSearchParams)) {
-        const newSearchParams = typeof next === "function" ? next(search!) : next
-        const newSearch = newSearchParams.toString()
-        const url = new URL(window.location.href)
-        url.search = newSearch
-        window.history.replaceState(null, "", url.toString())
-    }
-    return useOriginalQueryState(search, setSearch, rest)
 }
 
 export type ThirdPartyImageErrorHandlerTarget = HTMLElement | Window | Document | MutableRefObject<HTMLElement>
