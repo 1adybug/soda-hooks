@@ -357,3 +357,18 @@ ${
         }
     }, [before, after, backgroundColor, fontSize, color, lineHeight, fontFamily])
 }
+
+/**
+ * 有时候我们需要一个 state，它接收 props 中的值作为初始状态，后续变化不受 props 影响，这时候就可以使用 useInputState
+ * 但是 props 中的值变化时，state 也会变化
+ * @param input props 中的值
+ */
+export function useInputState<T>(input: T): [T, Dispatch<SetStateAction<T>>] {
+    const prevInput = useRef(input)
+    const [state, setState] = useState(input)
+    if (prevInput.current !== input) {
+        setState(input)
+        prevInput.current = input
+    }
+    return [state, setState]
+}
