@@ -359,16 +359,17 @@ ${
 }
 
 /**
- * 有时候我们需要一个 state，它接收 props 中的值作为初始状态，后续变化不受 props 影响，这时候就可以使用 useInputState
- * 但是 props 中的值变化时，state 也会变化
+ * 有时候我们需要一个 state，它接收 props 中的值作为初始状态，后续变化不受 props 影响，这时候就可以使用 useInputState，当 props 中的值变化时，state 也会变化
  * @param input props 中的值
+ * @param deps 依赖项 deps 变化时，state 会被重置为 input，默认为 [input]
  */
-export function useInputState<T>(input: T): [T, Dispatch<SetStateAction<T>>] {
-    const prevInput = useRef(input)
+export function useInputState<T>(input: T, deps?: any[]): [T, Dispatch<SetStateAction<T>>] {
+    deps ??= [input]
+    const prevInput = useRef(deps)
     const [state, setState] = useState(input)
-    if (prevInput.current !== input) {
+    if (!compareArray(prevInput.current, deps)) {
         setState(input)
-        prevInput.current = input
+        prevInput.current = deps
     }
     return [state, setState]
 }
