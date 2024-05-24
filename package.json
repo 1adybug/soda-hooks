@@ -28,7 +28,8 @@
         "url": "git+https://github.com/1adybug/soda-hooks.git"
     },
     "dependencies": {
-        "react-router-dom": "^6.23.1"
+        "react-router-dom": "^6.23.1",
+        "soda-type": "^0.0.2"
     },
     "devDependencies": {
         "@types/react": "^18.3.2",

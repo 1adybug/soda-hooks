@@ -1,6 +1,7 @@
 import type { CSSProperties, DependencyList, Dispatch, MutableRefObject, SetStateAction } from "react"
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"
 import { useSearchParams } from "react-router-dom"
+import { Equal } from "soda-type"
 
 export interface Storage {
     getItem(key: string): string | null
@@ -167,9 +168,11 @@ export type QueryStateOptions<T extends string = never, K extends QueryToStateFn
     deps?: any[]
 }
 
-export type QueryState<T extends string = never, K extends QueryToStateFnMap = QueryToStateFnMap> = {
-    [Key in T | keyof K]: Key extends keyof K ? (K[Key] extends (...args: any[]) => infer R ? R : string | undefined) : string | undefined
-}
+export type QueryState<T extends string = never, K extends QueryToStateFnMap = QueryToStateFnMap> = Equal<K, QueryToStateFnMap> extends true
+    ? Record<T, string | undefined>
+    : {
+          [Key in T | keyof K]: Key extends keyof K ? (K[Key] extends (...args: any[]) => infer R ? R : string | undefined) : string | undefined
+      }
 
 export function compareArray(a: any[], b: any[]) {
     return a.length === b.length && a.every((value, index) => Object.is(value, b[index]))
@@ -184,7 +187,7 @@ export type SetQueryState<T extends string, K extends QueryToStateFnMap> = (stat
 /**
  * 使用 React Router 的 useSearchParams 实现的 useQueryState
  */
-export function useQueryState<T extends string = never, K extends QueryToStateFnMap = {}>(options?: QueryStateOptions<T, K>): [QueryState<T, K>, SetQueryState<T, K>] {
+export function useQueryState<T extends string = never, K extends QueryToStateFnMap = QueryToStateFnMap>(options?: QueryStateOptions<T, K>): [QueryState<T, K>, SetQueryState<T, K>] {
     const [searchParams, setSearchParams] = useSearchParams()
     return useNativeQueryState({ ...options, search: searchParams, setSearch: setSearchParams })
 }
@@ -197,7 +200,7 @@ export type NativeQueryStateOptions<T extends string = never, K extends QueryToS
 /**
  * 使用原生的 URLSearchParams 实现的 useNativeQueryState
  */
-export function useNativeQueryState<T extends string = never, K extends QueryToStateFnMap = {}>(options?: NativeQueryStateOptions<T, K>): [QueryState<T, K>, SetQueryState<T, K>] {
+export function useNativeQueryState<T extends string = never, K extends QueryToStateFnMap = QueryToStateFnMap>(options?: NativeQueryStateOptions<T, K>): [QueryState<T, K>, SetQueryState<T, K>] {
     const { keys = [], parse = {}, stringify = {}, deps = [], search: originalSearch, setSearch: originalSetSearch } = options || {}
     const searchParams = originalSearch ?? new URLSearchParams(window.location.search)
     const setSearchParams =
@@ -235,7 +238,7 @@ export function useNativeQueryState<T extends string = never, K extends QueryToS
         const { searchParams, setSearchParams, search, parse, stringify } = cache.current
         const newSearchParams = new URLSearchParams(searchParams)
         Object.keys(search).forEach(key => {
-            const value = newState[key]
+            const value = newState[key as keyof typeof newState]
             const stringifier = (stringify as any)[key]
             if (!stringifier) {
                 if (value === undefined || value === null) {
