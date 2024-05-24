@@ -184,7 +184,7 @@ export type SetQueryState<T extends string, K extends QueryToStateFnMap> = (stat
 /**
  * 使用 React Router 的 useSearchParams 实现的 useQueryState
  */
-export function useQueryState<T extends string = never, K extends QueryToStateFnMap = QueryToStateFnMap>(options?: QueryStateOptions<T, K>): [QueryState<T, K>, SetQueryState<T, K>] {
+export function useQueryState<T extends string = never, K extends QueryToStateFnMap = {}>(options?: QueryStateOptions<T, K>): [QueryState<T, K>, SetQueryState<T, K>] {
     const [searchParams, setSearchParams] = useSearchParams()
     return useNativeQueryState({ ...options, search: searchParams, setSearch: setSearchParams })
 }
@@ -197,7 +197,7 @@ export type NativeQueryStateOptions<T extends string = never, K extends QueryToS
 /**
  * 使用原生的 URLSearchParams 实现的 useNativeQueryState
  */
-export function useNativeQueryState<T extends string = never, K extends QueryToStateFnMap = QueryToStateFnMap>(options?: NativeQueryStateOptions<T, K>): [QueryState<T, K>, SetQueryState<T, K>] {
+export function useNativeQueryState<T extends string = never, K extends QueryToStateFnMap = {}>(options?: NativeQueryStateOptions<T, K>): [QueryState<T, K>, SetQueryState<T, K>] {
     const { keys = [], parse = {}, stringify = {}, deps = [], search: originalSearch, setSearch: originalSetSearch } = options || {}
     const searchParams = originalSearch ?? new URLSearchParams(window.location.search)
     const setSearchParams =
