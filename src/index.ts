@@ -376,3 +376,122 @@ export function useInputState<T>(input: T, deps?: any[]): [T, Dispatch<SetStateA
     }
     return [state, setState]
 }
+
+export type TreeNode<T> = T & {
+    children?: TreeNode<T>[] | undefined
+}
+
+export type TreeFiber<T> = T & {
+    parent: TreeFiber<T> | null
+    child: TreeFiber<T> | null
+    sibling: TreeFiber<T> | null
+}
+
+export function treeToFiber<T>(tree: TreeNode<T>[]): TreeFiber<T> {
+    if (tree.length === 0) throw new Error("树不能为空")
+    let first: TreeFiber<T>
+    function createFiber(tree: TreeNode<T>[], parent: TreeFiber<T> | null): void {
+        let prev: TreeFiber<T> | null = null
+        tree.forEach(item => {
+            const { children, ...others } = item
+            const fiber: TreeFiber<T> = {
+                ...(others as T),
+                parent,
+                child: null,
+                sibling: null
+            }
+            first ??= fiber
+            if (parent && !parent.child) parent.child = fiber
+            if (prev) prev.sibling = fiber
+            prev = fiber
+            if (children) createFiber(children, fiber)
+        })
+    }
+    createFiber(tree, null)
+    return first!
+}
+
+export function getNextFiber<T>(fiber: TreeFiber<T>): TreeFiber<T> | null {
+    if (fiber.child) return fiber.child
+    if (fiber.sibling) return fiber.sibling
+    let parent = fiber.parent
+    while (parent) {
+        if (parent.sibling) return parent.sibling
+        parent = parent.parent
+    }
+    return null
+}
+
+export function walkThroughFiber<T>(fiber: TreeFiber<T>, callback: (fiber: TreeFiber<T>) => void): void {
+    if (fiber.parent) throw new Error("根节点的 parent 必须为空")
+    while (fiber) {
+        callback(fiber)
+        fiber = getNextFiber(fiber)!
+    }
+}
+
+export type SearchTreeResult<T> = {
+    /** 原始树的 fiber */
+    fiber: TreeFiber<T>
+    /** 搜索后的树 */
+    searchTree: TreeNode<T>[]
+    /** 自身符合条件的 fiber */
+    trueFibers: Set<TreeFiber<T>>
+    /** 最终被添加进结果的 fiber 和 node 的映射 */
+    addedFiberMap: Map<TreeFiber<T>, TreeNode<T>>
+}
+
+/**
+ * 从树中搜索符合条件的节点
+ * @param treeOrFiber 树或者 fiber
+ * @param callback 回调函数，最好使用 useCallback 包裹
+ * @param transform 转换函数，最好使用 useCallback 包裹
+ */
+export function useSearchTree<T>(treeOrFiber: TreeNode<T>[] | TreeFiber<T>, callback: (data: T) => boolean): SearchTreeResult<T>
+export function useSearchTree<T, K>(treeOrFiber: TreeNode<T>[] | TreeFiber<T>, callback: (data: T) => boolean, transform: (data: T, isTrue: boolean, hasParentIsTrue: boolean) => K): SearchTreeResult<K>
+export function useSearchTree<T, K>(treeOrFiber: TreeNode<T>[] | TreeFiber<T>, callback: (data: T) => boolean, transform?: (data: T, isTrue: boolean, hasParentIsTrue: boolean) => K) {
+    const fiber = useMemo(() => (Array.isArray(treeOrFiber) ? treeToFiber(treeOrFiber) : treeOrFiber), [treeToFiber])
+    const searchTreeResult: SearchTreeResult<T> = useMemo(() => {
+        const searchTree: TreeNode<T>[] = []
+        /** fiber 与 node 的映射 */
+        const addedFiberMap: Map<TreeFiber<T>, TreeNode<T>> = new Map()
+        /** 自身符合条件的 fiber */
+        const trueFibers: Set<TreeFiber<T>> = new Set()
+        /** 检测是否有祖先 fiber 符合条件 */
+        function parentIsTrue(fiber: TreeFiber<T>) {
+            let parent = fiber.parent
+            while (parent) {
+                if (trueFibers.has(parent)) return true
+                parent = parent.parent
+            }
+            return false
+        }
+        /** 添加 fiber 到树 */
+        function addFiberToTree(fiber: TreeFiber<T>) {
+            const { parent, child, sibling, ...others } = fiber
+            const node = transform ? (transform(others as T, trueFibers.has(fiber), parentIsTrue(fiber)) as TreeNode<T>) : (others as TreeNode<T>)
+            addedFiberMap.set(fiber, node)
+            // 如果没有父节点，直接添加到树中
+            if (!parent) return searchTree.push(node)
+            // 如果父节点没有添加到树中，先添加父节点
+            if (!addedFiberMap.get(parent)) addFiberToTree(parent)
+            const parentNode = addedFiberMap.get(parent)!
+            parentNode.children ??= []
+            parentNode.children.push(node)
+        }
+        // 遍历 fiber
+        walkThroughFiber(fiber, fiber => {
+            const isTrue = callback(fiber)
+            if (isTrue) trueFibers.add(fiber)
+            const hasParentIsTrue = parentIsTrue(fiber)
+            if (isTrue || hasParentIsTrue) addFiberToTree(fiber)
+        })
+        return {
+            fiber,
+            searchTree,
+            addedFiberMap,
+            trueFibers
+        }
+    }, [fiber, callback, transform])
+    return searchTreeResult
+}
